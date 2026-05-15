@@ -15,6 +15,7 @@ import type {
 /**
  * Get all active routes with checkpoint counts
  * Optimized: Single query with aggregation instead of N+1
+ * Only counts FORWARD direction for accurate display
  */
 export async function getActiveRoutes(): Promise<RouteSearchResult[]> {
   const supabase = await createClient()
@@ -29,7 +30,7 @@ export async function getActiveRoutes(): Promise<RouteSearchResult[]> {
       origin,
       destination,
       base_fare,
-      route_paths(count)
+      route_paths(id, direction)
     `)
     .eq('is_active', true)
     .order('route_code')
@@ -44,13 +45,15 @@ export async function getActiveRoutes(): Promise<RouteSearchResult[]> {
     origin: route.origin,
     destination: route.destination,
     base_fare: Number(route.base_fare),
-    checkpoint_count: route.route_paths?.[0]?.count ?? 0,
+    // Count only FORWARD direction checkpoints for accurate display
+    checkpoint_count: (route.route_paths ?? []).filter((rp: any) => rp.direction === 'FORWARD').length,
   }))
 }
 
 /**
  * Get route by code with full path (forward and return)
  * Optimized: Single query with nested joins - NO N+1
+ * Calculates distance and time for FORWARD direction only
  */
 export async function getRouteByCode(routeCode: string): Promise<RouteDetailResponse | null> {
   const supabase = await createClient()
@@ -87,12 +90,12 @@ export async function getRouteByCode(routeCode: string): Promise<RouteDetailResp
     .filter((rp: { direction: string }) => rp.direction === 'RETURN')
     .sort((a: { sequence_order: number }, b: { sequence_order: number }) => a.sequence_order - b.sequence_order)
 
-  // Calculate totals
-  const totalDistance = route.route_paths.reduce(
+  // Calculate totals for FORWARD direction only (for accurate display)
+  const totalDistance = forwardPaths.reduce(
     (sum: number, rp: { distance_meters: number | null }) => sum + (rp.distance_meters ?? 0),
     0
   )
-  const totalTime = route.route_paths.reduce(
+  const totalTime = forwardPaths.reduce(
     (sum: number, rp: { estimated_time_minutes: number | null }) => sum + (rp.estimated_time_minutes ?? 0),
     0
   )
@@ -122,6 +125,7 @@ export async function getRouteByCode(routeCode: string): Promise<RouteDetailResp
 
 /**
  * Search routes by type (Traditional vs Modernized PUJ)
+ * Only counts FORWARD direction for accurate display
  */
 export async function getRoutesByType(routeType: RouteType): Promise<RouteSearchResult[]> {
   const supabase = await createClient()
@@ -136,7 +140,7 @@ export async function getRoutesByType(routeType: RouteType): Promise<RouteSearch
       origin,
       destination,
       base_fare,
-      route_paths(count)
+      route_paths(id, direction)
     `)
     .eq('route_type', routeType)
     .eq('is_active', true)
@@ -152,7 +156,8 @@ export async function getRoutesByType(routeType: RouteType): Promise<RouteSearch
     origin: route.origin,
     destination: route.destination,
     base_fare: Number(route.base_fare),
-    checkpoint_count: route.route_paths?.[0]?.count ?? 0,
+    // Count only FORWARD direction checkpoints for accurate display
+    checkpoint_count: (route.route_paths ?? []).filter((rp: any) => rp.direction === 'FORWARD').length,
   }))
 }
 
