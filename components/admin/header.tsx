@@ -1,5 +1,7 @@
 'use client'
 
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -12,23 +14,19 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LogOut, User } from 'lucide-react'
 
-const TOKEN_KEY = 'navicebu_admin_token'
-
 interface AdminHeaderProps {
   username: string
+  userEmail: string
 }
 
-export function AdminHeader({ username }: AdminHeaderProps) {
+export function AdminHeader({ username, userEmail }: AdminHeaderProps) {
+  const router = useRouter()
+
   async function handleLogout() {
-    const token = localStorage.getItem(TOKEN_KEY)
-    if (token) {
-      await fetch('/api/auth/logout', { 
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-    }
-    localStorage.removeItem(TOKEN_KEY)
-    window.location.href = '/admin/login'
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/admin/login')
+    router.refresh()
   }
 
   return (
@@ -51,7 +49,7 @@ export function AdminHeader({ username }: AdminHeaderProps) {
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">{username}</p>
-              <p className="text-xs leading-none text-muted-foreground">Administrator</p>
+              <p className="text-xs leading-none text-muted-foreground">{userEmail}</p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
