@@ -1,86 +1,47 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Bus, AlertCircle } from 'lucide-react'
-
-const TOKEN_KEY = 'navicebu_admin_token'
+import { useRouter } from 'next/navigation'
 
 export default function AdminLoginPage() {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isChecking, setIsChecking] = useState(true)
-
-  // Check if already authenticated on mount
-  useEffect(() => {
-    async function checkSession() {
-      const token = localStorage.getItem(TOKEN_KEY)
-      if (!token) {
-        setIsChecking(false)
-        return
-      }
-      
-      try {
-        const response = await fetch('/api/auth/session', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-        const data = await response.json()
-        if (data.authenticated) {
-          window.location.href = '/admin'
-          return
-        }
-      } catch {
-        // Not authenticated
-      }
-      localStorage.removeItem(TOKEN_KEY)
-      setIsChecking(false)
-    }
-    checkSession()
-  }, [])
+  const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setIsLoading(true)
 
+    const supabase = createClient()
+
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.message || 'Login failed')
+      if (error) {
+        setError(error.message)
         setIsLoading(false)
         return
       }
 
-      // Store token in localStorage
-      localStorage.setItem(TOKEN_KEY, data.token)
-      
-      // Redirect to admin dashboard
-      window.location.href = '/admin'
+      router.push('/admin')
+      router.refresh()
     } catch {
       setError('An error occurred. Please try again.')
       setIsLoading(false)
     }
-  }
-
-  if (isChecking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
   }
 
   return (
@@ -105,16 +66,16 @@ export default function AdminLoginPage() {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
                 required
                 disabled={isLoading}
-                autoComplete="username"
+                autoComplete="email"
               />
             </div>
             
