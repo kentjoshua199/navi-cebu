@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import {
   Select,
@@ -21,7 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
 
 interface StopSetting {
   id: string
@@ -53,6 +53,7 @@ export default function StopSettingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedSetting, setSelectedSetting] = useState<StopSetting | null>(null)
   const [formData, setFormData] = useState({
     route_id: '',
     checkpoint_id: '',
@@ -61,7 +62,6 @@ export default function StopSettingsPage() {
     stop_type: 'REGULAR',
     waiting_time_minutes: 2,
   })
-  const { toast } = useToast()
 
   useEffect(() => {
     fetchStopSettings()
@@ -74,12 +74,14 @@ export default function StopSettingsPage() {
       const response = await fetch('/api/admin/stop-settings', {
         credentials: 'include'
       })
-      if (!response.ok) throw new Error('Failed to fetch')
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status}`)
+      }
       const { data } = await response.json()
+      console.log('[v0] Stop settings fetched:', data)
       setStopSettings(data || [])
     } catch (error) {
-      toast.error('Failed to load stop settings')
-      console.error(error)
+      console.error('[v0] Failed to load stop settings:', error)
     } finally {
       setIsLoading(false)
     }
@@ -94,7 +96,7 @@ export default function StopSettingsPage() {
       const { data } = await response.json()
       setRoutes(data || [])
     } catch (error) {
-      console.error('Failed to fetch routes:', error)
+      console.error('[v0] Failed to fetch routes:', error)
     }
   }
 
@@ -107,7 +109,7 @@ export default function StopSettingsPage() {
       const { data } = await response.json()
       setCheckpoints(data || [])
     } catch (error) {
-      console.error('Failed to fetch checkpoints:', error)
+      console.error('[v0] Failed to fetch checkpoints:', error)
     }
   }
 
@@ -116,16 +118,24 @@ export default function StopSettingsPage() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/admin/stop-settings', {
-        method: 'POST',
+      const url = selectedSetting 
+        ? `/api/admin/stop-settings/${selectedSetting.id}`
+        : '/api/admin/stop-settings'
+      
+      const method = selectedSetting ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(formData),
       })
 
-      if (!response.ok) throw new Error('Failed to save')
+      if (!response.ok) {
+        throw new Error(`Failed to save: ${response.status}`)
+      }
 
-      toast.success('Stop setting created')
+      alert(selectedSetting ? 'Stop setting updated' : 'Stop setting created')
       setFormData({
         route_id: '',
         checkpoint_id: '',
@@ -134,11 +144,12 @@ export default function StopSettingsPage() {
         stop_type: 'REGULAR',
         waiting_time_minutes: 2,
       })
+      setSelectedSetting(null)
       setIsDialogOpen(false)
       fetchStopSettings()
     } catch (error) {
-      toast.error('Failed to create stop setting')
-      console.error(error)
+      alert('Failed to save stop setting')
+      console.error('[v0] Error:', error)
     } finally {
       setIsSubmitting(false)
     }
@@ -153,14 +164,42 @@ export default function StopSettingsPage() {
         credentials: 'include',
       })
 
-      if (!response.ok) throw new Error('Failed to delete')
+      if (!response.ok) {
+        throw new Error(`Failed to delete: ${response.status}`)
+      }
 
-      toast.success('Stop setting deleted')
+      alert('Stop setting deleted')
       fetchStopSettings()
     } catch (error) {
-      toast.error('Failed to delete stop setting')
-      console.error(error)
+      alert('Failed to delete stop setting')
+      console.error('[v0] Error:', error)
     }
+  }
+
+  function handleEdit(setting: StopSetting) {
+    setSelectedSetting(setting)
+    setFormData({
+      route_id: setting.route_id,
+      checkpoint_id: setting.checkpoint_id,
+      stop_order: setting.stop_order,
+      is_mandatory: setting.is_mandatory,
+      stop_type: setting.stop_type,
+      waiting_time_minutes: setting.waiting_time_minutes,
+    })
+    setIsDialogOpen(true)
+  }
+
+  function handleNewClick() {
+    setSelectedSetting(null)
+    setFormData({
+      route_id: '',
+      checkpoint_id: '',
+      stop_order: 1,
+      is_mandatory: false,
+      stop_type: 'REGULAR',
+      waiting_time_minutes: 2,
+    })
+    setIsDialogOpen(true)
   }
 
   if (isLoading) {
@@ -182,14 +221,17 @@ export default function StopSettingsPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={handleNewClick}>
               <Plus className="h-4 w-4 mr-2" />
               Add Stop Setting
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Add Stop Setting</DialogTitle>
+              <DialogTitle>{selectedSetting ? 'Edit' : 'Add'} Stop Setting</DialogTitle>
+              <DialogDescription>
+                {selectedSetting ? 'Update stop configuration' : 'Create a new stop setting'}
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -274,7 +316,7 @@ export default function StopSettingsPage() {
 
               <Button type="submit" disabled={isSubmitting} className="w-full">
                 {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Create
+                {selectedSetting ? 'Update' : 'Create'}
               </Button>
             </form>
           </DialogContent>
@@ -305,13 +347,22 @@ export default function StopSettingsPage() {
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(setting.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(setting)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(setting.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

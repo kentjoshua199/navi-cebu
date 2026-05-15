@@ -14,40 +14,46 @@ import type {
 
 /**
  * Get all active routes with checkpoint counts
- * Optimized: Single query with aggregation instead of N+1
- * Only counts FORWARD direction for accurate display
+ * Counts only FORWARD direction for accurate landing page display
  */
 export async function getActiveRoutes(): Promise<RouteSearchResult[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('routes')
-    .select(`
-      id,
-      route_code,
-      route_name,
-      route_type,
-      origin,
-      destination,
-      base_fare,
-      route_paths(id, direction)
-    `)
+    .select('id, route_code, route_name, route_type, origin, destination, base_fare')
     .eq('is_active', true)
     .order('route_code')
 
   if (error) throw new Error(`Failed to fetch routes: ${error.message}`)
 
-  return (data ?? []).map((route) => ({
-    id: route.id,
-    route_code: route.route_code,
-    route_name: route.route_name,
-    route_type: route.route_type as RouteType,
-    origin: route.origin,
-    destination: route.destination,
-    base_fare: Number(route.base_fare),
-    // Count only FORWARD direction checkpoints for accurate display
-    checkpoint_count: (route.route_paths ?? []).filter((rp: any) => rp.direction === 'FORWARD').length,
-  }))
+  // Count forward stops for each route
+  const routesWithCounts = await Promise.all(
+    (data ?? []).map(async (route) => {
+      const { count, error: countError } = await supabase
+        .from('route_paths')
+        .select('id', { count: 'exact', head: true })
+        .eq('route_id', route.id)
+        .eq('direction', 'FORWARD')
+
+      if (countError) {
+        console.error(`[v0] Error counting stops for route ${route.id}:`, countError)
+      }
+
+      return {
+        id: route.id,
+        route_code: route.route_code,
+        route_name: route.route_name,
+        route_type: route.route_type as RouteType,
+        origin: route.origin,
+        destination: route.destination,
+        base_fare: Number(route.base_fare),
+        checkpoint_count: count ?? 0,
+      }
+    })
+  )
+
+  return routesWithCounts
 }
 
 /**
@@ -125,40 +131,47 @@ export async function getRouteByCode(routeCode: string): Promise<RouteDetailResp
 
 /**
  * Search routes by type (Traditional vs Modernized PUJ)
- * Only counts FORWARD direction for accurate display
+ * Counts only FORWARD direction for accurate display
  */
 export async function getRoutesByType(routeType: RouteType): Promise<RouteSearchResult[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('routes')
-    .select(`
-      id,
-      route_code,
-      route_name,
-      route_type,
-      origin,
-      destination,
-      base_fare,
-      route_paths(id, direction)
-    `)
+    .select('id, route_code, route_name, route_type, origin, destination, base_fare')
     .eq('route_type', routeType)
     .eq('is_active', true)
     .order('route_code')
 
   if (error) throw new Error(`Failed to fetch routes by type: ${error.message}`)
 
-  return (data ?? []).map((route) => ({
-    id: route.id,
-    route_code: route.route_code,
-    route_name: route.route_name,
-    route_type: route.route_type as RouteType,
-    origin: route.origin,
-    destination: route.destination,
-    base_fare: Number(route.base_fare),
-    // Count only FORWARD direction checkpoints for accurate display
-    checkpoint_count: (route.route_paths ?? []).filter((rp: any) => rp.direction === 'FORWARD').length,
-  }))
+  // Count forward stops for each route
+  const routesWithCounts = await Promise.all(
+    (data ?? []).map(async (route) => {
+      const { count, error: countError } = await supabase
+        .from('route_paths')
+        .select('id', { count: 'exact', head: true })
+        .eq('route_id', route.id)
+        .eq('direction', 'FORWARD')
+
+      if (countError) {
+        console.error(`[v0] Error counting stops for route ${route.id}:`, countError)
+      }
+
+      return {
+        id: route.id,
+        route_code: route.route_code,
+        route_name: route.route_name,
+        route_type: route.route_type as RouteType,
+        origin: route.origin,
+        destination: route.destination,
+        base_fare: Number(route.base_fare),
+        checkpoint_count: count ?? 0,
+      }
+    })
+  )
+
+  return routesWithCounts
 }
 
 /**
