@@ -78,7 +78,6 @@ export default function StopSettingsPage() {
         throw new Error(`Failed to fetch: ${response.status}`)
       }
       const { data } = await response.json()
-      console.log('[v0] Stop settings fetched:', data)
       setStopSettings(data || [])
     } catch (error) {
       console.error('[v0] Failed to load stop settings:', error)
