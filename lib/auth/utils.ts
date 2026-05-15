@@ -1,17 +1,19 @@
 import { cookies } from 'next/headers'
 import type { AdminSession } from './types'
 
-// Hardcoded admin credentials as per user request
+// Hardcoded admin credentials as per user request (case-insensitive)
 const ADMIN_CREDENTIALS = {
-  username: 'Admin',
-  password: 'Admin',
+  username: 'admin',
+  password: 'admin',
 }
 
-const SESSION_COOKIE_NAME = 'navicebu_admin_session'
+export const SESSION_COOKIE_NAME = 'navicebu_admin_session'
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 export function validateCredentials(username: string, password: string): boolean {
-  return username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password
+  // Case-insensitive comparison for both username and password
+  return username.toLowerCase() === ADMIN_CREDENTIALS.username.toLowerCase() && 
+         password.toLowerCase() === ADMIN_CREDENTIALS.password.toLowerCase()
 }
 
 export function createSession(username: string): AdminSession {
@@ -22,15 +24,14 @@ export function createSession(username: string): AdminSession {
   }
 }
 
-export async function setSessionCookie(session: AdminSession): Promise<void> {
-  const cookieStore = await cookies()
-  cookieStore.set(SESSION_COOKIE_NAME, JSON.stringify(session), {
+export function getSessionCookieOptions() {
+  return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     maxAge: SESSION_DURATION_MS / 1000,
     path: '/',
-  })
+  }
 }
 
 export async function getSession(): Promise<AdminSession | null> {

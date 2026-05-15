@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { loginSchema, type AuthResponse } from '@/lib/auth/types'
-import { validateCredentials, createSession, setSessionCookie } from '@/lib/auth/utils'
+import { validateCredentials, createSession, SESSION_COOKIE_NAME, getSessionCookieOptions } from '@/lib/auth/utils'
 
 export async function POST(request: Request): Promise<NextResponse<AuthResponse>> {
   try {
@@ -25,15 +25,21 @@ export async function POST(request: Request): Promise<NextResponse<AuthResponse>
       )
     }
     
-    // Create and set session
+    // Create session
     const session = createSession(username)
-    await setSessionCookie(session)
     
-    return NextResponse.json({
+    // Create response with cookie set directly on the response
+    const response = NextResponse.json({
       success: true,
       message: 'Login successful',
       session,
     })
+    
+    // Set cookie on the response object
+    const cookieOptions = getSessionCookieOptions()
+    response.cookies.set(SESSION_COOKIE_NAME, JSON.stringify(session), cookieOptions)
+    
+    return response
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
