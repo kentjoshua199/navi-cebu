@@ -9,8 +9,10 @@ interface RouteParams {
 
 // PUT update barangay
 export async function PUT(request: Request, { params }: RouteParams) {
+  const { error: authError } = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    await requireAdmin()
     const { id } = await params
     
     const body = await request.json()
@@ -46,9 +48,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
     
     return NextResponse.json({ data })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     console.error('Error updating barangay:', error)
     return NextResponse.json({ error: 'Failed to update barangay' }, { status: 500 })
   }
@@ -56,8 +55,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
 // DELETE barangay
 export async function DELETE(request: Request, { params }: RouteParams) {
+  const { error: authError } = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    await requireAdmin()
     const { id } = await params
     
     const supabase = await createClient()
@@ -70,9 +71,6 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     
     return NextResponse.json({ success: true })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     console.error('Error deleting barangay:', error)
     return NextResponse.json({ error: 'Failed to delete barangay' }, { status: 500 })
   }

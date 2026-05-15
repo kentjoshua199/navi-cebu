@@ -4,10 +4,11 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { checkpointSchema } from '@/lib/validations/admin'
 
 // GET all checkpoints for admin
-export async function GET() {
+export async function GET(request: Request) {
+  const { error: authError } = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    await requireAdmin()
-    
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('checkpoints')
@@ -21,9 +22,6 @@ export async function GET() {
     
     return NextResponse.json({ data })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     console.error('Error fetching checkpoints:', error)
     return NextResponse.json({ error: 'Failed to fetch checkpoints' }, { status: 500 })
   }
@@ -31,9 +29,10 @@ export async function GET() {
 
 // POST create new checkpoint
 export async function POST(request: Request) {
+  const { error: authError } = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    await requireAdmin()
-    
     const body = await request.json()
     const parsed = checkpointSchema.safeParse(body)
     
@@ -58,9 +57,6 @@ export async function POST(request: Request) {
     
     return NextResponse.json({ data }, { status: 201 })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     console.error('Error creating checkpoint:', error)
     return NextResponse.json({ error: 'Failed to create checkpoint' }, { status: 500 })
   }

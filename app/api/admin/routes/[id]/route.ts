@@ -9,8 +9,10 @@ interface RouteParams {
 
 // GET single route
 export async function GET(request: Request, { params }: RouteParams) {
+  const { error: authError } = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    await requireAdmin()
     const { id } = await params
     
     const supabase = await createClient()
@@ -29,9 +31,6 @@ export async function GET(request: Request, { params }: RouteParams) {
     
     return NextResponse.json({ data })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     console.error('Error fetching route:', error)
     return NextResponse.json({ error: 'Failed to fetch route' }, { status: 500 })
   }
@@ -39,8 +38,10 @@ export async function GET(request: Request, { params }: RouteParams) {
 
 // PUT update route
 export async function PUT(request: Request, { params }: RouteParams) {
+  const { error: authError } = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    await requireAdmin()
     const { id } = await params
     
     const body = await request.json()
@@ -76,9 +77,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
     
     return NextResponse.json({ data })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     console.error('Error updating route:', error)
     return NextResponse.json({ error: 'Failed to update route' }, { status: 500 })
   }
@@ -86,8 +84,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
 // DELETE route
 export async function DELETE(request: Request, { params }: RouteParams) {
+  const { error: authError } = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    await requireAdmin()
     const { id } = await params
     
     const supabase = await createClient()
@@ -100,9 +100,6 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     
     return NextResponse.json({ success: true })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     console.error('Error deleting route:', error)
     return NextResponse.json({ error: 'Failed to delete route' }, { status: 500 })
   }

@@ -4,10 +4,11 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { routeSchema } from '@/lib/validations/admin'
 
 // GET all routes for admin
-export async function GET() {
+export async function GET(request: Request) {
+  const { error: authError } = await requireAdmin(request)
+  if (authError) return authError
+  
   try {
-    await requireAdmin()
-    
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('routes')
@@ -18,9 +19,6 @@ export async function GET() {
     
     return NextResponse.json({ data })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     console.error('Error fetching routes:', error)
     return NextResponse.json({ error: 'Failed to fetch routes' }, { status: 500 })
   }
@@ -28,9 +26,10 @@ export async function GET() {
 
 // POST create new route
 export async function POST(request: Request) {
+  const { error: authError } = await requireAdmin(request)
+  if (authError) return authError
+  
   try {
-    await requireAdmin()
-    
     const body = await request.json()
     const parsed = routeSchema.safeParse(body)
     
@@ -60,9 +59,6 @@ export async function POST(request: Request) {
     
     return NextResponse.json({ data }, { status: 201 })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     console.error('Error creating route:', error)
     return NextResponse.json({ error: 'Failed to create route' }, { status: 500 })
   }
