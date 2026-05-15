@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/utils'
+import { getSessionByToken } from '@/lib/auth/utils'
 
-export async function GET(): Promise<NextResponse> {
-  const session = await getSession()
+export async function GET(request: Request): Promise<NextResponse> {
+  // Get token from Authorization header
+  const authHeader = request.headers.get('authorization')
+  const token = authHeader?.replace('Bearer ', '')
+  
+  if (!token) {
+    return NextResponse.json({ authenticated: false }, { status: 401 })
+  }
+  
+  const session = await getSessionByToken(token)
   
   if (!session) {
     return NextResponse.json({ authenticated: false }, { status: 401 })
@@ -10,6 +18,10 @@ export async function GET(): Promise<NextResponse> {
   
   return NextResponse.json({
     authenticated: true,
-    session,
+    session: {
+      username: session.username,
+      isAdmin: session.isAdmin,
+      expiresAt: session.expiresAt
+    }
   })
 }

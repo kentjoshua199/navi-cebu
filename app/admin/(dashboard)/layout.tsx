@@ -1,24 +1,32 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { AdminHeader } from '@/components/admin/header'
+
+const TOKEN_KEY = 'navicebu_admin_token'
 
 export default function AdminDashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [username, setUsername] = useState('')
 
   useEffect(() => {
     async function checkAuth() {
+      const token = localStorage.getItem(TOKEN_KEY)
+      
+      if (!token) {
+        setIsAuthenticated(false)
+        window.location.href = '/admin/login'
+        return
+      }
+      
       try {
         const response = await fetch('/api/auth/session', {
-          credentials: 'include',
+          headers: { 'Authorization': `Bearer ${token}` }
         })
         const data = await response.json()
         
@@ -26,16 +34,18 @@ export default function AdminDashboardLayout({
           setIsAuthenticated(true)
           setUsername(data.session?.username || 'Admin')
         } else {
+          localStorage.removeItem(TOKEN_KEY)
           setIsAuthenticated(false)
-          router.replace('/admin/login')
+          window.location.href = '/admin/login'
         }
       } catch {
+        localStorage.removeItem(TOKEN_KEY)
         setIsAuthenticated(false)
-        router.replace('/admin/login')
+        window.location.href = '/admin/login'
       }
     }
     checkAuth()
-  }, [router])
+  }, [])
 
   // Show loading while checking auth
   if (isAuthenticated === null) {

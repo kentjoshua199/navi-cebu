@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server'
-import { SESSION_COOKIE_NAME } from '@/lib/auth/utils'
+import { deleteSessionByToken } from '@/lib/auth/utils'
 
-export async function POST(): Promise<NextResponse> {
-  const response = NextResponse.json({
+export async function POST(request: Request): Promise<NextResponse> {
+  // Get token from Authorization header
+  const authHeader = request.headers.get('authorization')
+  const token = authHeader?.replace('Bearer ', '')
+  
+  if (token) {
+    await deleteSessionByToken(token)
+  }
+  
+  return NextResponse.json({
     success: true,
     message: 'Logged out successfully',
   })
-  
-  // Clear the session cookie by setting it with maxAge 0
-  response.cookies.set(SESSION_COOKIE_NAME, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 0,
-    path: '/',
-  })
-  
-  return response
 }

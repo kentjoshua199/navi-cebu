@@ -8,24 +8,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Bus, AlertCircle } from 'lucide-react'
 
+const TOKEN_KEY = 'navicebu_admin_token'
+
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isChecking, setIsChecking] = useState(true)
 
   // Check if already authenticated on mount
   useEffect(() => {
     async function checkSession() {
+      const token = localStorage.getItem(TOKEN_KEY)
+      if (!token) {
+        setIsChecking(false)
+        return
+      }
+      
       try {
-        const response = await fetch('/api/auth/session')
+        const response = await fetch('/api/auth/session', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
         const data = await response.json()
         if (data.authenticated) {
           window.location.href = '/admin'
+          return
         }
       } catch {
-        // Not authenticated, stay on login page
+        // Not authenticated
       }
+      localStorage.removeItem(TOKEN_KEY)
+      setIsChecking(false)
     }
     checkSession()
   }, [])
@@ -40,7 +54,6 @@ export default function AdminLoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
-        credentials: 'include', // Important: include cookies
       })
 
       const data = await response.json()
@@ -51,12 +64,23 @@ export default function AdminLoginPage() {
         return
       }
 
-      // Full page reload to pick up the new session cookie
+      // Store token in localStorage
+      localStorage.setItem(TOKEN_KEY, data.token)
+      
+      // Redirect to admin dashboard
       window.location.href = '/admin'
     } catch {
       setError('An error occurred. Please try again.')
       setIsLoading(false)
     }
+  }
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (

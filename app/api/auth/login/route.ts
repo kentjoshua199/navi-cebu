@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { loginSchema, type AuthResponse } from '@/lib/auth/types'
-import { validateCredentials, createSession, SESSION_COOKIE_NAME, getSessionCookieOptions } from '@/lib/auth/utils'
+import { loginSchema } from '@/lib/auth/types'
+import { validateCredentials, createSession } from '@/lib/auth/utils'
 
-export async function POST(request: Request): Promise<NextResponse<AuthResponse>> {
+export async function POST(request: Request) {
   try {
     const body = await request.json()
     
@@ -17,30 +17,28 @@ export async function POST(request: Request): Promise<NextResponse<AuthResponse>
     
     const { username, password } = parsed.data
     
-    // Validate credentials
-    if (!validateCredentials(username, password)) {
+    // Validate credentials against database
+    const validation = await validateCredentials(username, password)
+    if (!validation.valid || !validation.userId) {
       return NextResponse.json(
         { success: false, message: 'Invalid username or password' },
         { status: 401 }
       )
     }
     
-    // Create session
-    const session = createSession(username)
+    // Create session in database
+    const session = await createSession(validation.userId, username)
     
-    // Create response with cookie set directly on the response
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       message: 'Login successful',
-      session,
+      token: session.token,
+      session: {
+        username: session.username,
+        isAdmin: session.isAdmin,
+        expiresAt: session.expiresAt
+      }
     })
-    
-    // Set cookie on the response object (encode to handle special characters)
-    const cookieOptions = getSessionCookieOptions()
-    const encodedSession = encodeURIComponent(JSON.stringify(session))
-    response.cookies.set(SESSION_COOKIE_NAME, encodedSession, cookieOptions)
-    
-    return response
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(

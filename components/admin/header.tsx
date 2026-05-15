@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -13,17 +12,23 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LogOut, User } from 'lucide-react'
 
+const TOKEN_KEY = 'navicebu_admin_token'
+
 interface AdminHeaderProps {
   username: string
 }
 
 export function AdminHeader({ username }: AdminHeaderProps) {
-  const router = useRouter()
-
   async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/admin/login')
-    router.refresh()
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (token) {
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+    }
+    localStorage.removeItem(TOKEN_KEY)
+    window.location.href = '/admin/login'
   }
 
   return (

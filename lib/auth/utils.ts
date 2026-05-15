@@ -1,74 +1,122 @@
-import { cookies } from 'next/headers'
-import type { AdminSession } from './types'
+import { createClient } from '@/lib/supabase/server'
 
-// Hardcoded admin credentials as per user request (case-insensitive)
-const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'admin',
+export interface AdminSession {
+  id: string
+  userId: string
+  username: string
+  token: string
+  expiresAt: number
+  isAdmin: boolean
 }
 
-export const SESSION_COOKIE_NAME = 'navicebu_admin_session'
-const SESSION_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
-
-export function validateCredentials(username: string, password: string): boolean {
-  // Case-insensitive comparison for both username and password
-  return username.toLowerCase() === ADMIN_CREDENTIALS.username.toLowerCase() && 
-         password.toLowerCase() === ADMIN_CREDENTIALS.password.toLowerCase()
+// Generate a random token
+function generateToken(): string {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-export function createSession(username: string): AdminSession {
+export async function validateCredentials(username: string, password: string): Promise<{ valid: boolean; userId?: string }> {
+  const supabase = await createClient()
+  
+  const { data, error } = await supabase
+    .from('admin_users')
+    .select('id, username, password_hash, is_active')
+    .eq('username', username.toLowerCase())
+    .eq('is_active', true)
+    .single()
+  
+  if (error || !data) {
+    return { valid: false }
+  }
+  
+  // Simple password check (case-insensitive for demo)
+  if (data.password_hash.toLowerCase() === password.toLowerCase()) {
+    return { valid: true, userId: data.id }
+  }
+  
+  return { valid: false }
+}
+
+export async function createSession(userId: string, username: string): Promise<AdminSession> {
+  const supabase = await createClient()
+  const token = generateToken()
+  const expiresAt = Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+  
+  // Clean up any existing sessions for this user
+  await supabase
+    .from('admin_sessions')
+    .delete()
+    .eq('user_id', userId)
+  
+  const { data, error } = await supabase
+    .from('admin_sessions')
+    .insert({
+      user_id: userId,
+      token: token,
+      expires_at: new Date(expiresAt).toISOString()
+    })
+    .select('id')
+    .single()
+  
+  if (error) {
+    console.error('Failed to create session:', error)
+    throw new Error('Failed to create session')
+  }
+  
   return {
+    id: data.id,
+    userId,
     username,
-    isAdmin: true,
-    expiresAt: Date.now() + SESSION_DURATION_MS,
+    token,
+    expiresAt,
+    isAdmin: true
   }
 }
 
-export function getSessionCookieOptions() {
+export async function getSessionByToken(token: string): Promise<AdminSession | null> {
+  if (!token) return null
+  
+  const supabase = await createClient()
+  
+  const { data, error } = await supabase
+    .from('admin_sessions')
+    .select(`
+      id,
+      user_id,
+      token,
+      expires_at,
+      admin_users!inner (
+        username
+      )
+    `)
+    .eq('token', token)
+    .gt('expires_at', new Date().toISOString())
+    .single()
+  
+  if (error || !data) {
+    return null
+  }
+  
+  const adminUser = data.admin_users as unknown as { username: string }
+  
   return {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    maxAge: SESSION_DURATION_MS / 1000,
-    path: '/',
+    id: data.id,
+    userId: data.user_id,
+    username: adminUser.username,
+    token: data.token,
+    expiresAt: new Date(data.expires_at).getTime(),
+    isAdmin: true
   }
 }
 
-export async function getSession(): Promise<AdminSession | null> {
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)
+export async function deleteSessionByToken(token: string): Promise<void> {
+  if (!token) return
   
-  if (!sessionCookie?.value) {
-    return null
-  }
+  const supabase = await createClient()
   
-  try {
-    // Decode the URL-encoded cookie value
-    const decodedValue = decodeURIComponent(sessionCookie.value)
-    const session: AdminSession = JSON.parse(decodedValue)
-    
-    // Check if session is expired
-    if (session.expiresAt < Date.now()) {
-      return null
-    }
-    
-    return session
-  } catch {
-    return null
-  }
-}
-
-export async function clearSession(): Promise<void> {
-  const cookieStore = await cookies()
-  cookieStore.delete(SESSION_COOKIE_NAME)
-}
-
-export async function requireAdmin(): Promise<AdminSession> {
-  const session = await getSession()
-  
-  if (!session || !session.isAdmin) {
-    throw new Error('Unauthorized')
-  }
-  
-  return session
+  await supabase
+    .from('admin_sessions')
+    .delete()
+    .eq('token', token)
 }
