@@ -180,7 +180,3 @@ export async function getStatistics() {
     modernizedRoutes: modernizedCount,
   }
 }
-  }
-
-  return Array.from(uniqueRoutes.values()).sort((a, b) => a.route_code.localeCompare(b.route_code))
-}
