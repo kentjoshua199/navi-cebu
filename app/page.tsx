@@ -2,6 +2,7 @@ import { RouteExplorer } from '@/components/route-explorer'
 import { Bus, MapPin, Zap, Shield } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export default function HomePage() {
   return (
@@ -30,6 +31,7 @@ export default function HomePage() {
                   <span>Traditional &amp; Modern PUJ</span>
                 </div>
               </div>
+              <ThemeToggle />
               <Button asChild variant="outline" size="sm">
                 <Link href="/admin/login">
                   <Shield className="h-4 w-4 mr-2" />
