@@ -120,3 +120,33 @@ export async function deleteSessionByToken(token: string): Promise<void> {
     .delete()
     .eq('token', token)
 }
+
+// Middleware function to require admin authentication for API routes
+export async function requireAdmin(request: Request): Promise<{ session: AdminSession | null; error: Response | null }> {
+  const authHeader = request.headers.get('Authorization')
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return {
+      session: null,
+      error: new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+  }
+  
+  const token = authHeader.substring(7)
+  const session = await getSessionByToken(token)
+  
+  if (!session) {
+    return {
+      session: null,
+      error: new Response(JSON.stringify({ error: 'Invalid or expired session' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+  }
+  
+  return { session, error: null }
+}
