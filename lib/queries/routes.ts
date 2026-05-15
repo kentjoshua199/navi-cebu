@@ -14,43 +14,52 @@ import type {
 
 /**
  * Get all active routes with checkpoint counts
- * Optimized: Single query with aggregation instead of N+1
+ * Counts only FORWARD direction for accurate landing page display
  */
 export async function getActiveRoutes(): Promise<RouteSearchResult[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('routes')
-    .select(`
-      id,
-      route_code,
-      route_name,
-      route_type,
-      origin,
-      destination,
-      base_fare,
-      route_paths(count)
-    `)
+    .select('id, route_code, route_name, route_type, origin, destination, base_fare')
     .eq('is_active', true)
     .order('route_code')
 
   if (error) throw new Error(`Failed to fetch routes: ${error.message}`)
 
-  return (data ?? []).map((route) => ({
-    id: route.id,
-    route_code: route.route_code,
-    route_name: route.route_name,
-    route_type: route.route_type as RouteType,
-    origin: route.origin,
-    destination: route.destination,
-    base_fare: Number(route.base_fare),
-    checkpoint_count: route.route_paths?.[0]?.count ?? 0,
-  }))
+  // Count forward stops for each route
+  const routesWithCounts = await Promise.all(
+    (data ?? []).map(async (route) => {
+      const { count, error: countError } = await supabase
+        .from('route_paths')
+        .select('id', { count: 'exact', head: true })
+        .eq('route_id', route.id)
+        .eq('direction', 'FORWARD')
+
+      if (countError) {
+        console.error(`[v0] Error counting stops for route ${route.id}:`, countError)
+      }
+
+      return {
+        id: route.id,
+        route_code: route.route_code,
+        route_name: route.route_name,
+        route_type: route.route_type as RouteType,
+        origin: route.origin,
+        destination: route.destination,
+        base_fare: Number(route.base_fare),
+        checkpoint_count: count ?? 0,
+      }
+    })
+  )
+
+  return routesWithCounts
 }
 
 /**
  * Get route by code with full path (forward and return)
  * Optimized: Single query with nested joins - NO N+1
+ * Calculates distance and time for FORWARD direction only
  */
 export async function getRouteByCode(routeCode: string): Promise<RouteDetailResponse | null> {
   const supabase = await createClient()
@@ -87,12 +96,12 @@ export async function getRouteByCode(routeCode: string): Promise<RouteDetailResp
     .filter((rp: { direction: string }) => rp.direction === 'RETURN')
     .sort((a: { sequence_order: number }, b: { sequence_order: number }) => a.sequence_order - b.sequence_order)
 
-  // Calculate totals
-  const totalDistance = route.route_paths.reduce(
+  // Calculate totals for FORWARD direction only (for accurate display)
+  const totalDistance = forwardPaths.reduce(
     (sum: number, rp: { distance_meters: number | null }) => sum + (rp.distance_meters ?? 0),
     0
   )
-  const totalTime = route.route_paths.reduce(
+  const totalTime = forwardPaths.reduce(
     (sum: number, rp: { estimated_time_minutes: number | null }) => sum + (rp.estimated_time_minutes ?? 0),
     0
   )
@@ -122,83 +131,70 @@ export async function getRouteByCode(routeCode: string): Promise<RouteDetailResp
 
 /**
  * Search routes by type (Traditional vs Modernized PUJ)
+ * Counts only FORWARD direction for accurate display
  */
 export async function getRoutesByType(routeType: RouteType): Promise<RouteSearchResult[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('routes')
-    .select(`
-      id,
-      route_code,
-      route_name,
-      route_type,
-      origin,
-      destination,
-      base_fare,
-      route_paths(count)
-    `)
+    .select('id, route_code, route_name, route_type, origin, destination, base_fare')
     .eq('route_type', routeType)
     .eq('is_active', true)
     .order('route_code')
 
   if (error) throw new Error(`Failed to fetch routes by type: ${error.message}`)
 
-  return (data ?? []).map((route) => ({
-    id: route.id,
-    route_code: route.route_code,
-    route_name: route.route_name,
-    route_type: route.route_type as RouteType,
-    origin: route.origin,
-    destination: route.destination,
-    base_fare: Number(route.base_fare),
-    checkpoint_count: route.route_paths?.[0]?.count ?? 0,
-  }))
-}
+  // Count forward stops for each route
+  const routesWithCounts = await Promise.all(
+    (data ?? []).map(async (route) => {
+      const { count, error: countError } = await supabase
+        .from('route_paths')
+        .select('id', { count: 'exact', head: true })
+        .eq('route_id', route.id)
+        .eq('direction', 'FORWARD')
 
-/**
- * Find routes passing through a specific checkpoint
- * Useful for "What jeepneys pass here?" feature
- */
-export async function getRoutesPassingCheckpoint(checkpointId: string): Promise<RouteSearchResult[]> {
-  const supabase = await createClient()
+      if (countError) {
+        console.error(`[v0] Error counting stops for route ${route.id}:`, countError)
+      }
 
-  const { data, error } = await supabase
-    .from('route_paths')
-    .select(`
-      route:routes!inner(
-        id,
-        route_code,
-        route_name,
-        route_type,
-        origin,
-        destination,
-        base_fare,
-        is_active
-      )
-    `)
-    .eq('checkpoint_id', checkpointId)
-    .eq('route.is_active', true)
-
-  if (error) throw new Error(`Failed to fetch routes for checkpoint: ${error.message}`)
-
-  // Deduplicate routes (a route may pass checkpoint twice - forward and return)
-  const uniqueRoutes = new Map<string, RouteSearchResult>()
-  for (const item of data ?? []) {
-    const route = item.route as unknown as Route
-    if (!uniqueRoutes.has(route.id)) {
-      uniqueRoutes.set(route.id, {
+      return {
         id: route.id,
         route_code: route.route_code,
         route_name: route.route_name,
-        route_type: route.route_type,
+        route_type: route.route_type as RouteType,
         origin: route.origin,
         destination: route.destination,
         base_fare: Number(route.base_fare),
-        checkpoint_count: 0, // Not needed for this query
-      })
-    }
-  }
+        checkpoint_count: count ?? 0,
+      }
+    })
+  )
 
-  return Array.from(uniqueRoutes.values()).sort((a, b) => a.route_code.localeCompare(b.route_code))
+  return routesWithCounts
+}
+
+/**
+ * Get database statistics
+ */
+export async function getStatistics() {
+  const supabase = await createClient()
+
+  const [barangaysRes, routesRes] = await Promise.all([
+    supabase.from('barangays').select('id', { count: 'exact', head: true }),
+    supabase.from('routes').select('route_type', { head: false }).eq('is_active', true),
+  ])
+
+  const barangayCount = barangaysRes.count || 0
+  const allRoutes = routesRes.data || []
+  
+  const traditionalCount = allRoutes.filter((r: any) => r.route_type === 'TRADITIONAL').length
+  const modernizedCount = allRoutes.filter((r: any) => r.route_type === 'MODERNIZED').length
+
+  return {
+    barangayCount,
+    totalRoutes: allRoutes.length,
+    traditionalRoutes: traditionalCount,
+    modernizedRoutes: modernizedCount,
+  }
 }

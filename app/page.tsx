@@ -1,10 +1,18 @@
 import { RouteExplorer } from '@/components/route-explorer'
-import { Bus, MapPin, Zap, Shield } from 'lucide-react'
+import { Bus, MapPin, Zap, Shield, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { getStatistics } from '@/lib/queries/routes'
 
-export default function HomePage() {
+export default async function HomePage() {
+  let stats = { barangayCount: 0, totalRoutes: 0, traditionalRoutes: 0, modernizedRoutes: 0 }
+  
+  try {
+    stats = await getStatistics()
+  } catch (error) {
+    console.error('Failed to fetch statistics:', error)
+  }
   return (
     <main className="min-h-screen bg-background">
       {/* Header */}
@@ -24,11 +32,11 @@ export default function HomePage() {
               <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  <span>80 Barangays</span>
+                  <span>{stats.barangayCount} Barangays</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4" />
-                  <span>Traditional &amp; Modern PUJ</span>
+                  <Bus className="h-4 w-4" />
+                  <span>{stats.traditionalRoutes} Traditional & {stats.modernizedRoutes} Modern Routes</span>
                 </div>
               </div>
               <ThemeToggle />
