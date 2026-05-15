@@ -35,9 +35,10 @@ export async function POST(request: Request): Promise<NextResponse<AuthResponse>
       session,
     })
     
-    // Set cookie on the response object
+    // Set cookie on the response object (encode to handle special characters)
     const cookieOptions = getSessionCookieOptions()
-    response.cookies.set(SESSION_COOKIE_NAME, JSON.stringify(session), cookieOptions)
+    const encodedSession = encodeURIComponent(JSON.stringify(session))
+    response.cookies.set(SESSION_COOKIE_NAME, encodedSession, cookieOptions)
     
     return response
   } catch (error) {

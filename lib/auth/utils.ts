@@ -43,7 +43,9 @@ export async function getSession(): Promise<AdminSession | null> {
   }
   
   try {
-    const session: AdminSession = JSON.parse(sessionCookie.value)
+    // Decode the URL-encoded cookie value
+    const decodedValue = decodeURIComponent(sessionCookie.value)
+    const session: AdminSession = JSON.parse(decodedValue)
     
     // Check if session is expired
     if (session.expiresAt < Date.now()) {
