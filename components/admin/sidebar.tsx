@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Bus, MapPin, Home, Map } from 'lucide-react'
+import { Bus, MapPin, Home, Map, Settings } from 'lucide-react'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: Home },
   { href: '/admin/routes', label: 'Routes', icon: Bus },
   { href: '/admin/checkpoints', label: 'Checkpoints', icon: MapPin },
   { href: '/admin/barangays', label: 'Barangays', icon: Map },
+  { href: '/admin/stop-settings', label: 'Stop Settings', icon: Settings },
 ]
 
 export function AdminSidebar() {
