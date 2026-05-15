@@ -1,5 +1,6 @@
 import { RouteExplorer } from '@/components/route-explorer'
-import { Bus, MapPin, Zap } from 'lucide-react'
+import { Bus, MapPin, Zap, ShieldCheck } from 'lucide-react'
+import Link from 'next/link'
 
 export default function HomePage() {
   return (
@@ -17,15 +18,24 @@ export default function HomePage() {
                 <p className="text-sm text-muted-foreground">Cebu City Jeepney Route Finder</p>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>80 Barangays</span>
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>80 Barangays</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  <span>Traditional &amp; Modern PUJ</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                <span>Traditional &amp; Modern PUJ</span>
-              </div>
+              <Link 
+                href="/admin"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-muted hover:bg-muted/80 transition-colors"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Admin</span>
+              </Link>
             </div>
           </div>
         </div>
