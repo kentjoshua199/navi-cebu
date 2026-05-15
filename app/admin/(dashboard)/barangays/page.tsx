@@ -40,6 +40,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { MapPinPicker } from '@/components/admin/map-pin-picker'
 
 interface Barangay {
   id: string
@@ -281,6 +282,16 @@ export default function BarangaysManagementPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Location</Label>
+                <MapPinPicker
+                  coordinates={formData.coordinates}
+                  onCoordinatesChange={(coords) => setFormData({
+                    ...formData,
+                    coordinates: coords
+                  })}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
