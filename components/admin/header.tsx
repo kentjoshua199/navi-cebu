@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { LogOut, User } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 interface AdminHeaderProps {
   username: string
@@ -35,7 +36,9 @@ export function AdminHeader({ username, userEmail }: AdminHeaderProps) {
         <h2 className="text-lg font-semibold">Admin Dashboard</h2>
       </div>
       
-      <DropdownMenu>
+      <div className="flex items-center gap-3">
+        <ThemeToggle />
+        <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
             <Avatar className="h-10 w-10">
@@ -64,6 +67,7 @@ export function AdminHeader({ username, userEmail }: AdminHeaderProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     </header>
   )
 }

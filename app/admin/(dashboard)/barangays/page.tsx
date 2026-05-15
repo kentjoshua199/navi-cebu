@@ -72,7 +72,9 @@ export default function BarangaysManagementPage() {
 
   async function fetchBarangays() {
     try {
-      const response = await fetch('/api/admin/barangays')
+      const response = await fetch('/api/admin/barangays', {
+        credentials: 'include'
+      })
       if (!response.ok) throw new Error('Failed to fetch barangays')
       const { data } = await response.json()
       setBarangays(data || [])
@@ -123,6 +125,7 @@ export default function BarangaysManagementPage() {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       })
 
@@ -147,6 +150,7 @@ export default function BarangaysManagementPage() {
     try {
       const response = await fetch(`/api/admin/barangays/${selectedBarangay.id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
 
       if (!response.ok) throw new Error('Failed to delete barangay')

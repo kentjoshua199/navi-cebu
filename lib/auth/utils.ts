@@ -122,10 +122,14 @@ export async function deleteSessionByToken(token: string): Promise<void> {
 }
 
 // Middleware function to require admin authentication for API routes
+// Uses Supabase Auth instead of custom token-based auth
 export async function requireAdmin(request: Request): Promise<{ session: AdminSession | null; error: Response | null }> {
-  const authHeader = request.headers.get('Authorization')
+  const supabase = await createClient()
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Check for Supabase session
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
     return {
       session: null,
       error: new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -135,18 +139,16 @@ export async function requireAdmin(request: Request): Promise<{ session: AdminSe
     }
   }
   
-  const token = authHeader.substring(7)
-  const session = await getSessionByToken(token)
-  
-  if (!session) {
-    return {
-      session: null,
-      error: new Response(JSON.stringify({ error: 'Invalid or expired session' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    }
+  // Return a compatible session object
+  return {
+    session: {
+      id: user.id,
+      userId: user.id,
+      username: user.email || 'admin',
+      token: '',
+      expiresAt: Date.now() + 86400000,
+      isAdmin: true
+    },
+    error: null
   }
-  
-  return { session, error: null }
 }

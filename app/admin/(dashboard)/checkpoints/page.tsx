@@ -86,7 +86,9 @@ export default function CheckpointsManagementPage() {
 
   async function fetchCheckpoints() {
     try {
-      const response = await fetch('/api/admin/checkpoints')
+      const response = await fetch('/api/admin/checkpoints', {
+        credentials: 'include'
+      })
       if (!response.ok) throw new Error('Failed to fetch checkpoints')
       const { data } = await response.json()
       setCheckpoints(data || [])
@@ -100,7 +102,9 @@ export default function CheckpointsManagementPage() {
 
   async function fetchBarangays() {
     try {
-      const response = await fetch('/api/admin/barangays')
+      const response = await fetch('/api/admin/barangays', {
+        credentials: 'include'
+      })
       if (!response.ok) throw new Error('Failed to fetch barangays')
       const { data } = await response.json()
       setBarangays(data || [])
@@ -152,6 +156,7 @@ export default function CheckpointsManagementPage() {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       })
 
@@ -176,6 +181,7 @@ export default function CheckpointsManagementPage() {
     try {
       const response = await fetch(`/api/admin/checkpoints/${selectedCheckpoint.id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
 
       if (!response.ok) throw new Error('Failed to delete checkpoint')

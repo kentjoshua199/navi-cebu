@@ -79,7 +79,9 @@ export default function RoutesManagementPage() {
 
   async function fetchRoutes() {
     try {
-      const response = await fetch('/api/admin/routes')
+      const response = await fetch('/api/admin/routes', {
+        credentials: 'include'
+      })
       if (!response.ok) throw new Error('Failed to fetch routes')
       const { data } = await response.json()
       setRoutes(data || [])
@@ -129,6 +131,7 @@ export default function RoutesManagementPage() {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(formData),
       })
 
@@ -153,6 +156,7 @@ export default function RoutesManagementPage() {
     try {
       const response = await fetch(`/api/admin/routes/${selectedRoute.id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
 
       if (!response.ok) throw new Error('Failed to delete route')
