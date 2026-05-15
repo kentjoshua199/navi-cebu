@@ -157,47 +157,29 @@ export async function getRoutesByType(routeType: RouteType): Promise<RouteSearch
 }
 
 /**
- * Find routes passing through a specific checkpoint
- * Useful for "What jeepneys pass here?" feature
+ * Get database statistics
  */
-export async function getRoutesPassingCheckpoint(checkpointId: string): Promise<RouteSearchResult[]> {
+export async function getStatistics() {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
-    .from('route_paths')
-    .select(`
-      route:routes!inner(
-        id,
-        route_code,
-        route_name,
-        route_type,
-        origin,
-        destination,
-        base_fare,
-        is_active
-      )
-    `)
-    .eq('checkpoint_id', checkpointId)
-    .eq('route.is_active', true)
+  const [barangaysRes, routesRes] = await Promise.all([
+    supabase.from('barangays').select('id', { count: 'exact', head: true }),
+    supabase.from('routes').select('route_type', { head: false }).eq('is_active', true),
+  ])
 
-  if (error) throw new Error(`Failed to fetch routes for checkpoint: ${error.message}`)
+  const barangayCount = barangaysRes.count || 0
+  const allRoutes = routesRes.data || []
+  
+  const traditionalCount = allRoutes.filter((r: any) => r.route_type === 'TRADITIONAL').length
+  const modernizedCount = allRoutes.filter((r: any) => r.route_type === 'MODERNIZED').length
 
-  // Deduplicate routes (a route may pass checkpoint twice - forward and return)
-  const uniqueRoutes = new Map<string, RouteSearchResult>()
-  for (const item of data ?? []) {
-    const route = item.route as unknown as Route
-    if (!uniqueRoutes.has(route.id)) {
-      uniqueRoutes.set(route.id, {
-        id: route.id,
-        route_code: route.route_code,
-        route_name: route.route_name,
-        route_type: route.route_type,
-        origin: route.origin,
-        destination: route.destination,
-        base_fare: Number(route.base_fare),
-        checkpoint_count: 0, // Not needed for this query
-      })
-    }
+  return {
+    barangayCount,
+    totalRoutes: allRoutes.length,
+    traditionalRoutes: traditionalCount,
+    modernizedRoutes: modernizedCount,
+  }
+}
   }
 
   return Array.from(uniqueRoutes.values()).sort((a, b) => a.route_code.localeCompare(b.route_code))

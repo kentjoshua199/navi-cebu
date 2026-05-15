@@ -192,37 +192,98 @@ export function RouteExplorer() {
                 </div>
 
                 <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3">Route Path (Forward)</h4>
-                  <div className="space-y-2">
-                    {selectedRoute.checkpoints.forward.map((checkpoint, index) => (
-                      <div 
-                        key={checkpoint.id} 
-                        className="flex items-start gap-3"
-                      >
-                        <div className="flex flex-col items-center">
-                          <div className={`w-3 h-3 rounded-full ${
-                            index === 0 ? 'bg-green-500' : 
-                            index === selectedRoute.checkpoints.forward.length - 1 ? 'bg-red-500' : 
-                            'bg-primary'
-                          }`} />
-                          {index < selectedRoute.checkpoints.forward.length - 1 && (
-                            <div className="w-0.5 h-8 bg-border" />
-                          )}
-                        </div>
-                        <div className="flex-1 pb-2">
-                          <p className="font-medium text-sm">{checkpoint.name}</p>
-                          {checkpoint.barangay && (
-                            <p className="text-xs text-muted-foreground">
-                              {checkpoint.barangay.name}
-                            </p>
-                          )}
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {checkpoint.checkpoint_type}
-                        </Badge>
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-2 mb-2 text-sm">
+                    <span className="text-muted-foreground">Route Type:</span>
+                    <Badge variant={selectedRoute.route.route_type === 'TRADITIONAL' ? 'default' : 'secondary'}>
+                      {selectedRoute.route.route_type}
+                    </Badge>
                   </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Stops:</span>
+                    <Badge variant="outline">{selectedRoute.checkpoints.forward.length} forward</Badge>
+                    {selectedRoute.checkpoints.return.length > 0 && (
+                      <Badge variant="outline">{selectedRoute.checkpoints.return.length} return</Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <span className="text-green-600 dark:text-green-400">●</span>
+                      Forward Route: {selectedRoute.route.origin} → {selectedRoute.route.destination}
+                    </h4>
+                    <div className="space-y-2">
+                      {selectedRoute.checkpoints.forward.map((checkpoint, index) => (
+                        <div 
+                          key={checkpoint.id} 
+                          className="flex items-start gap-3"
+                        >
+                          <div className="flex flex-col items-center">
+                            <div className={`w-3 h-3 rounded-full ${
+                              index === 0 ? 'bg-green-500' : 
+                              index === selectedRoute.checkpoints.forward.length - 1 ? 'bg-red-500' : 
+                              'bg-primary'
+                            }`} />
+                            {index < selectedRoute.checkpoints.forward.length - 1 && (
+                              <div className="w-0.5 h-8 bg-border" />
+                            )}
+                          </div>
+                          <div className="flex-1 pb-2">
+                            <p className="font-medium text-sm">{checkpoint.name}</p>
+                            {checkpoint.barangay && (
+                              <p className="text-xs text-muted-foreground">
+                                {checkpoint.barangay.name}
+                              </p>
+                            )}
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {checkpoint.checkpoint_type}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Show Return Trip if available */}
+                  {selectedRoute.checkpoints.return.length > 0 && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <span className="text-blue-600 dark:text-blue-400">●</span>
+                        Return Route: {selectedRoute.route.destination} → {selectedRoute.route.origin}
+                      </h4>
+                      <div className="space-y-2">
+                        {selectedRoute.checkpoints.return.map((checkpoint, index) => (
+                          <div 
+                            key={checkpoint.id} 
+                            className="flex items-start gap-3"
+                          >
+                            <div className="flex flex-col items-center">
+                              <div className={`w-3 h-3 rounded-full ${
+                                index === 0 ? 'bg-blue-500' : 
+                                index === selectedRoute.checkpoints.return.length - 1 ? 'bg-orange-500' : 
+                                'bg-primary'
+                              }`} />
+                              {index < selectedRoute.checkpoints.return.length - 1 && (
+                                <div className="w-0.5 h-8 bg-border" />
+                              )}
+                            </div>
+                            <div className="flex-1 pb-2">
+                              <p className="font-medium text-sm">{checkpoint.name}</p>
+                              {checkpoint.barangay && (
+                                <p className="text-xs text-muted-foreground">
+                                  {checkpoint.barangay.name}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {checkpoint.checkpoint_type}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t pt-4">
