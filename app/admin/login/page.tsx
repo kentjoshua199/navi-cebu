@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,11 +9,26 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Bus, AlertCircle } from 'lucide-react'
 
 export default function AdminLoginPage() {
-  const router = useRouter()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  // Check if already authenticated on mount
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const response = await fetch('/api/auth/session')
+        const data = await response.json()
+        if (data.authenticated) {
+          window.location.href = '/admin'
+        }
+      } catch {
+        // Not authenticated, stay on login page
+      }
+    }
+    checkSession()
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -26,20 +40,21 @@ export default function AdminLoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
+        credentials: 'include', // Important: include cookies
       })
 
       const data = await response.json()
 
       if (!response.ok) {
         setError(data.message || 'Login failed')
+        setIsLoading(false)
         return
       }
 
-      router.push('/admin')
-      router.refresh()
+      // Full page reload to pick up the new session cookie
+      window.location.href = '/admin'
     } catch {
       setError('An error occurred. Please try again.')
-    } finally {
       setIsLoading(false)
     }
   }
@@ -75,6 +90,7 @@ export default function AdminLoginPage() {
                 placeholder="Enter username"
                 required
                 disabled={isLoading}
+                autoComplete="username"
               />
             </div>
             
@@ -88,6 +104,7 @@ export default function AdminLoginPage() {
                 placeholder="Enter password"
                 required
                 disabled={isLoading}
+                autoComplete="current-password"
               />
             </div>
             
