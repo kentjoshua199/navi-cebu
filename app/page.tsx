@@ -1,5 +1,7 @@
 import { RouteExplorer } from '@/components/route-explorer'
-import { Bus, MapPin, Zap } from 'lucide-react'
+import { Bus, MapPin, Zap, Shield } from 'lucide-react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export default function HomePage() {
   return (
@@ -17,15 +19,23 @@ export default function HomePage() {
                 <p className="text-sm text-muted-foreground">Cebu City Jeepney Route Finder</p>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>80 Barangays</span>
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>80 Barangays</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  <span>Traditional &amp; Modern PUJ</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                <span>Traditional &amp; Modern PUJ</span>
-              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/admin/login">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Admin
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
