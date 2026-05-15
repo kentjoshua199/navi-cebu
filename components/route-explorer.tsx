@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Search, MapPin, Bus, Clock, ArrowRight, Loader2 } from 'lucide-react'
 import type { RouteSearchResult, RouteDetailResponse } from '@/lib/types/database'
+import { RouteMap } from '@/components/route-map'
 
 export function RouteExplorer() {
   const [routes, setRoutes] = useState<RouteSearchResult[]>([])
@@ -231,6 +232,15 @@ export function RouteExplorer() {
                       PHP {selectedRoute.route.base_fare.toFixed(2)}
                     </span>
                   </div>
+                </div>
+
+                {/* Route Map */}
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3">Route Map</h4>
+                  <RouteMap 
+                    checkpoints={selectedRoute.checkpoints.forward}
+                    routeCode={selectedRoute.route.route_code}
+                  />
                 </div>
               </div>
             ) : (
