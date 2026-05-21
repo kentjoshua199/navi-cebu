@@ -9,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Search, MapPin, Bus, Clock, ArrowRight, Loader2 } from 'lucide-react'
 import type { RouteSearchResult, RouteDetailResponse } from '@/lib/types/database'
 import { RouteMap } from '@/components/route-map'
+import { FareCalculator } from '@/components/fare-calculator'
+import { RouteSchedules } from '@/components/route-schedules'
+import { ExportShare } from '@/components/export-share'
 
 export function RouteExplorer() {
   const [routes, setRoutes] = useState<RouteSearchResult[]>([])
@@ -192,12 +195,29 @@ export function RouteExplorer() {
                 </div>
 
                 <div className="border-t pt-4">
-                  <div className="flex items-center gap-2 mb-2 text-sm">
-                    <span className="text-muted-foreground">Route Type:</span>
-                    <Badge variant={selectedRoute.route.route_type === 'TRADITIONAL' ? 'default' : 'secondary'}>
-                      {selectedRoute.route.route_type}
-                    </Badge>
+                  <h4 className="font-semibold text-sm mb-4">Route Summary</h4>
+                  <div className="space-y-4">
+                    <FareCalculator
+                      routeCode={selectedRoute.route.route_code}
+                      baseFare={selectedRoute.route.base_fare}
+                      farePerKm={selectedRoute.route.fare_per_km || 2.50}
+                      totalDistance={selectedRoute.total_distance_meters}
+                    />
+
+                    <RouteSchedules
+                      firstTripTime={selectedRoute.route.first_trip_time || '05:00'}
+                      lastTripTime={selectedRoute.route.last_trip_time || '21:00'}
+                      peakHours={selectedRoute.route.peak_hours || { start: '07:00', end: '09:00' }}
+                      operatingDays={selectedRoute.route.operating_days || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']}
+                    />
+
+                    <ExportShare
+                      routeCode={selectedRoute.route.route_code}
+                      routeName={selectedRoute.route.route_name}
+                      data={`From: ${selectedRoute.route.origin}\nTo: ${selectedRoute.route.destination}\nDistance: ${(selectedRoute.total_distance_meters / 1000).toFixed(1)} km\nEstimated Time: ${selectedRoute.estimated_total_time_minutes} min\nBase Fare: ₱${selectedRoute.route.base_fare}`}
+                    />
                   </div>
+                </div>
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-muted-foreground">Stops:</span>
                     <Badge variant="outline">{selectedRoute.checkpoints.forward.length} forward</Badge>

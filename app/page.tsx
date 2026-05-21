@@ -1,5 +1,5 @@
 import { RouteExplorer } from '@/components/route-explorer'
-import { Bus, MapPin, Zap, Shield, Loader2 } from 'lucide-react'
+import { Bus, MapPin, Zap, Shield, Loader2, BookOpen, BarChart2 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -40,12 +40,26 @@ export default async function HomePage() {
                 </div>
               </div>
               <ThemeToggle />
+              <div className="flex items-center gap-2 sm:gap-3">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/routes/compare">
+                  <BarChart2 className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Compare</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/guide">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Guide</span>
+                </Link>
+              </Button>
               <Button asChild variant="outline" size="sm">
                 <Link href="/admin/login">
                   <Shield className="h-4 w-4 mr-2" />
                   Admin
                 </Link>
               </Button>
+            </div>
             </div>
           </div>
         </div>
