@@ -218,22 +218,13 @@ export function RouteExplorer() {
                     />
                   </div>
                 </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground">Stops:</span>
-                    <Badge variant="outline">{selectedRoute.checkpoints.forward.length} forward</Badge>
-                    {selectedRoute.checkpoints.return.length > 0 && (
-                      <Badge variant="outline">{selectedRoute.checkpoints.return.length} return</Badge>
-                    )}
-                  </div>
-                </div>
 
-                <div className="border-t pt-4 space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <span className="text-green-600 dark:text-green-400">●</span>
-                      Forward Route: {selectedRoute.route.origin} → {selectedRoute.route.destination}
-                    </h4>
-                    <div className="space-y-2">
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <span className="text-green-600 dark:text-green-400">●</span>
+                    Forward Route: {selectedRoute.route.origin} → {selectedRoute.route.destination}
+                  </h4>
+                  <div className="space-y-2">
                       {selectedRoute.checkpoints.forward.map((checkpoint, index) => (
                         <div 
                           key={checkpoint.id} 
@@ -263,7 +254,6 @@ export function RouteExplorer() {
                         </div>
                       ))}
                     </div>
-                  </div>
 
                   {/* Show Return Trip if available */}
                   {selectedRoute.checkpoints.return.length > 0 && (
