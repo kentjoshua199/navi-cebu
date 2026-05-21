@@ -33,8 +33,14 @@ export interface Route {
   origin: string
   destination: string
   base_fare: number
+  fare_per_km?: number
   is_active: boolean
+  map_url?: string | null
   operating_hours: OperatingHours
+  first_trip_time?: string
+  last_trip_time?: string
+  peak_hours?: { start: string; end: string; evening?: string; evening_end?: string }
+  operating_days?: string[]
   created_at: string
   updated_at: string
 }
@@ -67,12 +73,36 @@ export interface CheckpointWithBarangay extends Checkpoint {
   barangay: Barangay | null
 }
 
-export interface RoutePathWithCheckpoint extends RoutePath {
+export interface StopSetting {
+  id: string
+  route_id: string
+  checkpoint_id: string
+  stop_order: number
+  is_mandatory: boolean
+  stop_type: string
+  waiting_time_minutes: number
+  estimated_time_minutes?: number
+  distance_meters?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface StopSettingWithCheckpoint extends StopSetting {
   checkpoint: CheckpointWithBarangay
 }
 
+// Flattened stop detail for timeline display
+export interface StopDetail {
+  checkpoint: CheckpointWithBarangay
+  stop_order: number
+  stop_type: string
+  waiting_time_minutes: number
+  estimated_time_minutes: number
+  distance_meters: number
+}
+
 export interface RouteWithPath extends Route {
-  route_paths: RoutePathWithCheckpoint[]
+  stop_settings: StopSettingWithCheckpoint[]
 }
 
 // API Response types
@@ -93,6 +123,7 @@ export interface RouteDetailResponse {
     forward: CheckpointWithBarangay[]
     return: CheckpointWithBarangay[]
   }
+  stops: StopDetail[]
   total_distance_meters: number
   estimated_total_time_minutes: number
 }

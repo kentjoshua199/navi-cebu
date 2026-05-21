@@ -8,6 +8,10 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Search, MapPin, Bus, Clock, ArrowRight, Loader2 } from 'lucide-react'
 import type { RouteSearchResult, RouteDetailResponse } from '@/lib/types/database'
+import { RouteMap } from '@/components/route-map'
+import { FareCalculator } from '@/components/fare-calculator'
+import { RouteSchedules } from '@/components/route-schedules'
+import { ExportShare } from '@/components/export-share'
 
 export function RouteExplorer() {
   const [routes, setRoutes] = useState<RouteSearchResult[]>([])
@@ -171,67 +175,160 @@ export function RouteExplorer() {
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             ) : selectedRoute ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Badge variant="default" className="text-lg font-bold px-3 py-1">
                     {selectedRoute.route.route_code}
                   </Badge>
-                  <span className="font-medium">{selectedRoute.route.route_name}</span>
+                  <span className="font-medium text-sm">{selectedRoute.route.route_name}</span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-2 text-sm bg-muted/50 p-2 rounded">
+                  <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span>{selectedRoute.estimated_total_time_minutes} min</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span>{(selectedRoute.total_distance_meters / 1000).toFixed(1)} km</span>
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3">Route Path (Forward)</h4>
-                  <div className="space-y-2">
-                    {selectedRoute.checkpoints.forward.map((checkpoint, index) => (
-                      <div 
-                        key={checkpoint.id} 
-                        className="flex items-start gap-3"
-                      >
-                        <div className="flex flex-col items-center">
-                          <div className={`w-3 h-3 rounded-full ${
-                            index === 0 ? 'bg-green-500' : 
-                            index === selectedRoute.checkpoints.forward.length - 1 ? 'bg-red-500' : 
-                            'bg-primary'
-                          }`} />
-                          {index < selectedRoute.checkpoints.forward.length - 1 && (
-                            <div className="w-0.5 h-8 bg-border" />
-                          )}
-                        </div>
-                        <div className="flex-1 pb-2">
-                          <p className="font-medium text-sm">{checkpoint.name}</p>
-                          {checkpoint.barangay && (
-                            <p className="text-xs text-muted-foreground">
-                              {checkpoint.barangay.name}
-                            </p>
-                          )}
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {checkpoint.checkpoint_type}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <Tabs defaultValue="stops" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4 h-8">
+                    <TabsTrigger value="stops" className="text-xs">Stops</TabsTrigger>
+                    <TabsTrigger value="schedule" className="text-xs">Schedule</TabsTrigger>
+                    <TabsTrigger value="fare" className="text-xs">Fare</TabsTrigger>
+                    <TabsTrigger value="map" className="text-xs">Map</TabsTrigger>
+                  </TabsList>
 
-                <div className="border-t pt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Base Fare</span>
-                    <span className="text-xl font-bold text-primary">
-                      PHP {selectedRoute.route.base_fare.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
+                  {/* Stops Tab */}
+                  <TabsContent value="stops" className="space-y-2 max-h-64 overflow-y-auto">
+                    <div>
+                      <h4 className="font-medium text-xs mb-2 flex items-center gap-2">
+                        <span className="text-green-600 dark:text-green-400">●</span>
+                        Forward: {selectedRoute.route.origin} → {selectedRoute.route.destination}
+                      </h4>
+                      <div className="space-y-1">
+                        {selectedRoute.stops.map((stop, index) => (
+                          <div 
+                            key={stop.checkpoint.id} 
+                            className="flex items-start gap-2 text-xs"
+                          >
+                            <div className="flex flex-col items-center mt-0.5">
+                              <div className={`w-2 h-2 rounded-full ${
+                                index === 0 ? 'bg-green-500' : 
+                                index === selectedRoute.stops.length - 1 ? 'bg-red-500' : 
+                                'bg-primary'
+                              }`} />
+                              {index < selectedRoute.stops.length - 1 && (
+                                <div className="w-0.5 h-4 bg-border" />
+                              )}
+                            </div>
+                            <div className="flex-1 pb-1">
+                              <div className="flex justify-between items-start">
+                                <p className="font-medium text-xs">{stop.checkpoint.name}</p>
+                                {stop.estimated_time_minutes > 0 && (
+                                  <span className="text-xs font-semibold text-primary">
+                                    {stop.estimated_time_minutes} min
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex justify-between items-center text-xs text-muted-foreground mt-0.5">
+                                <span>{stop.checkpoint.barangay?.name || 'Unknown Location'}</span>
+                                {stop.distance_meters > 0 && (
+                                  <span>{(stop.distance_meters / 1000).toFixed(1)} km</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {selectedRoute.checkpoints.return.length > 0 && (
+                      <div className="border-t pt-2 mt-2">
+                        <h4 className="font-medium text-xs mb-2 flex items-center gap-2">
+                          <span className="text-blue-600 dark:text-blue-400">●</span>
+                          Return: {selectedRoute.route.destination} → {selectedRoute.route.origin}
+                        </h4>
+                        <div className="space-y-1">
+                          {selectedRoute.checkpoints.return.map((checkpoint, index) => (
+                            <div 
+                              key={checkpoint.id} 
+                              className="flex items-start gap-2 text-xs"
+                            >
+                              <div className="flex flex-col items-center mt-0.5">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  index === 0 ? 'bg-blue-500' : 
+                                  index === selectedRoute.checkpoints.return.length - 1 ? 'bg-orange-500' : 
+                                  'bg-primary'
+                                }`} />
+                                {index < selectedRoute.checkpoints.return.length - 1 && (
+                                  <div className="w-0.5 h-4 bg-border" />
+                                )}
+                              </div>
+                              <div className="flex-1 pb-1">
+                                <p className="font-medium text-xs">{checkpoint.name}</p>
+                                {checkpoint.barangay && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {checkpoint.barangay.name}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Schedule Tab */}
+                  <TabsContent value="schedule" className="pt-2">
+                    <RouteSchedules
+                      firstTripTime={selectedRoute.route.first_trip_time || '05:00'}
+                      lastTripTime={selectedRoute.route.last_trip_time || '21:00'}
+                      peakHours={selectedRoute.route.peak_hours || { start: '07:00', end: '09:00' }}
+                      operatingDays={selectedRoute.route.operating_days || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']}
+                    />
+                  </TabsContent>
+
+                  {/* Fare Tab */}
+                  <TabsContent value="fare" className="space-y-2 pt-2">
+                    <FareCalculator
+                      routeCode={selectedRoute.route.route_code}
+                      baseFare={selectedRoute.route.base_fare}
+                      farePerKm={selectedRoute.route.fare_per_km || 2.50}
+                      totalDistance={selectedRoute.total_distance_meters}
+                    />
+                    <ExportShare
+                      routeCode={selectedRoute.route.route_code}
+                      routeName={selectedRoute.route.route_name}
+                      data={`From: ${selectedRoute.route.origin}\nTo: ${selectedRoute.route.destination}\nDistance: ${(selectedRoute.total_distance_meters / 1000).toFixed(1)} km\nEstimated Time: ${selectedRoute.estimated_total_time_minutes} min\nBase Fare: ₱${selectedRoute.route.base_fare}`}
+                    />
+                  </TabsContent>
+
+                  {/* Map Tab */}
+                  <TabsContent value="map" className="pt-2 space-y-4">
+                    {selectedRoute.route.map_url ? (
+                      <div className="w-full aspect-video rounded-lg overflow-hidden border">
+                        <iframe 
+                          src={selectedRoute.route.map_url} 
+                          width="100%" 
+                          height="100%" 
+                          className="border-0"
+                          loading="lazy"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    ) : (
+                      <RouteMap 
+                        checkpoints={selectedRoute.checkpoints.forward}
+                        routeCode={selectedRoute.route.route_code}
+                      />
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
