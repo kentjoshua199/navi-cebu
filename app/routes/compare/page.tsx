@@ -18,7 +18,7 @@ export default async function CompareRoutesPage() {
       // Fetch full route details for comparison
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/routes/${route.route_code}`,
-        { cache: 'revalidate' }
+        { cache: 'force-cache' }
       )
       const { data } = await response.json()
       return {
